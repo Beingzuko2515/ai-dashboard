@@ -6,92 +6,84 @@ import base64
 from PIL import Image
 import io
 
-# --- PREMIUM PERPLEXITY-STYLE GLASSMORPHISM UI CONFIG ---
-st.set_page_config(page_title="Quantum AI Search", layout="wide", initial_sidebar_state="collapsed")
+# --- PREMIUM HOVER-GLOW PERPLEXITY UI LAYOUT ---
+st.set_page_config(page_title="Perplexity AI Console", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
     <style>
-    /* Premium Midnight Space Backdrop */
+    /* Premium Midnight Backdrop */
     .stApp {
         background-color: #0b0b10 !important;
         color: #e2e2ec !important;
     }
     
-    /* Hide default Streamlit sidebar menu decorations */
+    /* Remove default Streamlit sidebar frame spacing */
     [data-testid="stSidebar"] {
         display: none !important;
     }
     
-    /* Minimalist Central Search Dashboard Header */
-    .perplexity-hero {
+    /* Perplexity Dashboard Hero Text */
+    .hero-container {
         text-align: center;
-        padding-top: 40px;
-        padding-bottom: 30px;
+        padding-top: 50px;
+        padding-bottom: 25px;
     }
-    .perplexity-hero h1 {
-        font-size: 42px;
+    .hero-container h1 {
+        font-size: 44px;
         font-weight: 700;
         letter-spacing: -1px;
-        background: linear-gradient(135deg, #ffffff 30%, #ff8700 100%);
+        background: linear-gradient(135deg, #ffffff 40%, #ff8700 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
-    .perplexity-hero p {
+    .hero-container p {
         color: #8a8a9e;
         font-size: 16px;
     }
 
-    /* Translucent Container Cards with Subtle Amber Hover Glow */
-    .premium-panel {
-        background: rgba(18, 18, 26, 0.65);
+    /* Translucent Translucent Content Blocks */
+    .perplexity-card {
+        background: rgba(18, 18, 26, 0.7);
         padding: 24px;
         border-radius: 16px;
         border: 1px solid rgba(255, 255, 255, 0.05);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        margin-bottom: 25px;
-    }
-    .premium-panel:hover {
-        border-color: rgba(255, 135, 0, 0.25);
-        box-shadow: 0 0 30px rgba(255, 135, 0, 0.04);
-        background: rgba(18, 18, 26, 0.75);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        margin-bottom: 20px;
     }
     
-    /* Smooth Modern Chat Turn Bubbles */
-    .stChatMessage {
+    /* Clean Minimalist styling for popover file trays */
+    div[data-testid="stPopoverBody"] {
+        background-color: #12121a !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 12px;
-        margin-bottom: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.03);
-        background-color: rgba(20, 20, 30, 0.4) !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- SINGLE-PAGE APPLICATION STATE MEMORY SYSTEM ---
+# --- WORKSPACE INTERACTION HISTORY LAYER ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# --- BACKEND API VAULT ACCESS TURN KEYS ---
+# --- CREDENTIAL SECRETS GATEWAY ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except Exception:
     st.error("Missing API Key! Please configure GEMINI_API_KEY inside Streamlit Secrets.")
     st.stop()
 
-# --- INTELLIGENT MODEL ROUTER ENGINE TURN PIPELINES ---
-def run_intelligent_intent_router(prompt_text, image_b64=None, mime_type="image/jpeg"):
-    # Target standard verified endpoint configuration block
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+# --- AUTONOMOUS INFERENCE ROUTER SYSTEM ---
+def route_and_solve_intent(prompt_text, image_b64=None, mime_type="image/jpeg"):
+    # Routed to the stable production model endpoint to resolve the 404 block completely
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
     
     system_instruction = (
-        "You are an Omniscient Perplexity-style AI Router and Expert Software Engineer. "
-        "You automatically determine the user's intent. "
-        "1. If they say 'hi' or ask simple questions, give a short, beautifully simple conversational response. "
-        "2. If they ask to build, write, code, fix, or script something, output complete, production-ready, clean markdown code blocks. "
-        "3. If they describe an image idea to generate art, start your response with the word '[IMAGE_GENERATION_INTENT]' "
-        "followed by an expanded cinematic engineering description for an artistic master model prompt."
+        "You are an Omniscient Perplexity-style AI Assistant and Elite Code Engineer. "
+        "Analyze the user's intent autonomously:\n"
+        "1. For standard text interactions or greetings, provide a crisp, friendly, helpful conversational solution.\n"
+        "2. For development or script creation requests, deliver production-grade code within standard markdown blocks.\n"
+        "3. For visual generation requests, prepend exactly '[IMAGE_GENERATION_INTENT]' to your response followed by a highly descriptive artistic layout prompt prompt."
     )
     
     parts_list = []
@@ -110,10 +102,10 @@ def run_intelligent_intent_router(prompt_text, image_b64=None, mime_type="image/
             return res.json()["candidates"][0]["content"]["parts"][0]["text"]
         return f"🚨 Engine Interface Error: {res.text}"
     except Exception as e:
-        return f"🚨 Execution Failed: {str(e)}"
+        return f"🚨 Execution Error: {str(e)}"
 
-# --- IMAGEN 3 core generation engine ---
-def fetch_studio_art(prompt_text):
+# --- IMAGEN 3 ERROR-FREE ART CLIENT ---
+def generate_studio_canvas(prompt_text):
     url = f"https://generativelanguage.googleapis.com/v1/models/imagen-3.0-generate-002:predict?key={api_key}"
     headers = {"Content-Type": "application/json"}
     payload = {
@@ -134,58 +126,55 @@ def fetch_studio_art(prompt_text):
         return None
 
 # ==========================================
-# --- INTENT INTERFACE DISPLAY VIEWPORTS ---
+# --- PRIMARY VISUAL CONSOLE STREAM RENDER ---
 # ==========================================
 
-# Minimalist Perplexity Heading Grid
 st.markdown("""
-    <div class='perplexity-hero'>
+    <div class='hero-container'>
         <h1>Where knowledge begins.</h1>
-        <p>Ask anything, request raw code compilation, generate art assets, or analyze data matrices instantly.</p>
+        <p>Ask anything, compile stable scripts, generate visuals, or profile files dynamically.</p>
     </div>
 """, unsafe_allow_html=True)
 
-# Render active dialog logs
+# Stream conversation rows natively
 for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         if "visual_art_bytes" in msg:
-            st.image(msg["visual_art_bytes"], caption="Generated Studio Output Canvas", use_container_width=True)
+            st.image(msg["visual_art_bytes"], caption="Generated Studio Asset Layout", use_container_width=True)
         if "attached_dataframe" in msg:
             st.dataframe(msg["attached_dataframe"], use_container_width=True)
             st.area_chart(msg["attached_dataframe"].select_dtypes(include=['number']).head(30))
 
-st.markdown("<br><br>", unsafe_allow_html=True)
-
-# --- INLINE EMBEDDED DUAL SYSTEM CONTROLS TRAY ---
+# --- FLOATING CONTROL SYSTEM (COMPACT ATTACHMENT ICON) ---
 image_base64_string = None
 image_mime = "image/jpeg"
 uploaded_dataframe = None
 
-# Twin context configuration upload bars right above chat search lane row
-c_upload_img, c_upload_csv = st.columns(2)
+# A sleek popover element acts as a premium '+' icon tray sitting cleanly right above the text row
+with st.popover("➕ Add Media / Context Files"):
+    st.markdown("<small style='color:#ff8700;'>Attach visual targets or metrics datasets:</small>", unsafe_allow_html=True)
+    
+    file_attachment = st.file_uploader("Upload contextual file target", type=["png", "jpg", "jpeg", "csv"], label_visibility="collapsed")
+    if file_attachment is not None:
+        filename = file_attachment.name.lower()
+        if filename.endswith(('.png', '.jpg', '.jpeg')):
+            img = Image.open(file_attachment)
+            st.image(img, caption="Vision Element Mapped", width=90)
+            buffered = io.BytesIO()
+            img.save(buffered, format="JPEG")
+            image_base64_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            st.caption("✅ Image attached")
+        elif filename.endswith('.csv'):
+            uploaded_dataframe = pd.read_csv(file_attachment)
+            st.caption(f"✅ Data Link Active: {file_attachment.name}")
 
-with c_upload_img:
-    uploaded_img_file = st.file_uploader("🖼️ [+] Inline Image Context", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
-    if uploaded_img_file is not None:
-        img = Image.open(uploaded_img_file)
-        st.image(img, caption="Vision Target Loaded", width=110)
-        buffered = io.BytesIO()
-        img.save(buffered, format="JPEG")
-        image_base64_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-with c_upload_csv:
-    uploaded_csv_file = st.file_uploader("📊 [+] Inline CSV Dataset Table", type=["csv"], label_visibility="collapsed")
-    if uploaded_csv_file is not None:
-        uploaded_dataframe = pd.read_csv(uploaded_csv_file)
-        st.success(f"Spreadsheet linked: {uploaded_csv_file.name}")
-
-# Standard Perplexity Pill Search Input box (clears on Enter key submission instantly)
-if user_query := st.chat_input("Ask anything..."):
-    # Append structured dataset indicators if present
+# Standard Keyboard submission bar (Sends immediately upon hitting 'Enter' and self-clears)
+if user_query := st.chat_input("Ask a question, generate code blueprints, or analyze inputs..."):
+    # Synthesize background indicators if file matrices exist
     final_query_payload = user_query
     if uploaded_dataframe is not None:
-        final_query_payload += f"\n\n[User Data Attachment Content columns summary: {uploaded_dataframe.columns.tolist()}]"
+        final_query_payload += f"\n\n[System Context Notification: Attached file contains these columns: {uploaded_dataframe.columns.tolist()}]"
         
     with st.chat_message("user"):
         st.markdown(user_query)
@@ -195,27 +184,24 @@ if user_query := st.chat_input("Ask anything..."):
     
     with st.chat_message("assistant"):
         with st.spinner("Searching and processing intent..."):
-            ai_reply = run_intelligent_intent_router(final_query_payload, image_base64_string, image_mime)
-            
+            ai_reply = route_and_solve_intent(final_query_payload, image_base64_string, image_mime)
             assistant_log_entry = {"role": "assistant", "content": ai_reply}
             
-            # AUTOMATED INTERACTIVE INTELLIGENCE ROUTING ENGINE PATTERNS:
-            # Check if text model parsed query intent to create visuals
+            # AUTONOMOUS ROUTING TRIGGERS:
             if "[IMAGE_GENERATION_INTENT]" in ai_reply:
                 clean_prompt = ai_reply.replace("[IMAGE_GENERATION_INTENT]", "").strip()
-                st.markdown(f"🎨 **Auto-Routing to Image Studio Engine:** *Generating art asset...*")
-                art_bytes = fetch_studio_art(clean_prompt)
+                st.markdown(f"🎨 **Auto-Routing to Image Engine:** *Generating requested art asset...*")
+                art_bytes = generate_studio_canvas(clean_prompt)
                 if art_bytes:
                     st.image(art_bytes, caption="Generated Studio Output Canvas", use_container_width=True)
                     assistant_log_entry["visual_art_bytes"] = art_bytes
-                    assistant_log_entry["content"] = f"🎨 Generated art based on prompt instruction blueprints:\n> {clean_prompt}"
+                    assistant_log_entry["content"] = f"🎨 Generated art based on prompt blueprints:\n> {clean_prompt}"
                 else:
-                    st.error("Could not complete requested art creation task.")
+                    st.error("Art creation pipeline was unable to compile.")
             
-            # Check if sheet file structures exist to plot dynamically
             elif uploaded_dataframe is not None:
                 st.markdown(ai_reply)
-                st.markdown("### 📈 Dynamic Autonomous Metric Plot")
+                st.markdown("### 📈 Real-Time Automated Metric Plot")
                 st.dataframe(uploaded_dataframe.head(3), use_container_width=True)
                 numeric_fields = uploaded_dataframe.select_dtypes(include=['number']).columns.tolist()
                 if numeric_fields:
