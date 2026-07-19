@@ -23,8 +23,8 @@ except Exception:
     st.stop()
 
 def ask_gemini(prompt_text):
-    # Direct endpoint for stable free tier requests
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    # Fixed model path to use the current gemini-3.5-flash endpoint
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
     payload = {
         "contents": [{
