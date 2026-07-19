@@ -6,8 +6,8 @@ import base64
 from PIL import Image
 import io
 
-# --- DEEP PREMIUM DARK CONFIG & PREMIUM AMBIENT ORANGE HOVER ---
-st.set_page_config(page_title="Quantum AI Workspace", layout="wide", initial_sidebar_state="expanded")
+# --- DEEP MIDNIGHT DARK MODE CONFIG & GEMINI PILL BAR CSS ---
+st.set_page_config(page_title="Quantum AI Console", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
@@ -17,7 +17,7 @@ st.markdown("""
         color: #e2e2ec !important;
     }
     
-    /* Welcome banner card with sleek orange glow border on hover */
+    /* Welcome card layout containing a premium amber glow hover matrix */
     .premium-card {
         background: rgba(20, 20, 30, 0.7);
         padding: 20px;
@@ -28,34 +28,53 @@ st.markdown("""
         margin-bottom: 20px;
     }
     .premium-card:hover {
-        border-color: rgba(255, 135, 0, 0.4);
+        border-color: rgba(255, 135, 0, 0.3);
         background: rgba(255, 135, 0, 0.01);
-        box-shadow: 0 0 20px rgba(255, 135, 0, 0.06);
+        box-shadow: 0 0 20px rgba(255, 135, 0, 0.05);
     }
     
-    /* Interactive file attachment input dropzone with active orange focus highlights */
+    /* --- ULTRACLEAN INTEGRATED PILL DESIGN PACK --- */
+    /* Stripping down the upload container to form an embedded '+' icon node */
     div[data-testid="stFileUploader"] {
-        background-color: rgba(15, 15, 25, 0.8) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 8px !important;
-        padding: 4px !important;
-        transition: all 0.2s ease !important;
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-top: 4px !important;
     }
-    div[data-testid="stFileUploader"]:hover {
-        border-color: #ff8700 !important;
-        box-shadow: 0 0 12px rgba(255, 135, 0, 0.15) !important;
+    div[data-testid="stFileUploader"] section {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+    }
+    /* Stylizing the upload trigger label into a clean interactive element link */
+    div[data-testid="stFileUploader"] label {
+        display: none !important;
     }
     
-    /* Modern message bubble containers */
+    /* Clean chat message layout panels */
     .stChatMessage {
         border-radius: 12px;
         margin-bottom: 10px;
         border: 1px solid rgba(255, 255, 255, 0.04);
     }
+    
+    /* Soft glowing style for the execution action link */
+    .submit-pill-btn button {
+        background-color: #ff8700 !important;
+        color: white !important;
+        border-radius: 20px !important;
+        border: none !important;
+        font-weight: bold !important;
+        transition: all 0.2s !important;
+    }
+    .submit-pill-btn button:hover {
+        box-shadow: 0 0 12px rgba(255, 135, 0, 0.5) !important;
+        transform: scale(1.02);
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- CHAT SESSION MANAGEMENT FRAMEWORK ---
+# --- CHAT WORKSPACE STORAGE SYSTEMS ---
 if "sessions" not in st.session_state:
     st.session_state.sessions = {
         "default": {"name": "Workspace Main 💬", "messages": []}
@@ -63,7 +82,7 @@ if "sessions" not in st.session_state:
 if "current_session" not in st.session_state:
     st.session_state.current_session = "default"
 
-# --- SIDEBAR navigation panels ---
+# --- SIDEBAR DRAWER MANAGER ---
 with st.sidebar:
     st.title("🔮 Core Hub")
     if st.button("➕ New Workspace Canvas", use_container_width=True):
@@ -82,7 +101,7 @@ with st.sidebar:
             st.session_state.current_session = session_id
             st.rerun()
 
-# --- BACKEND API ACCESS PROTOCOLS ---
+# --- BACKEND MULTIMODAL API ROUTER ENGINE ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except Exception:
@@ -93,13 +112,10 @@ def run_multimodal_brain(prompt_text, conversation_history, image_b64=None, mime
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
     
-    # Restructured Instruction Set: Keeps replies simple/casual for greetings, but lets it act as an elite coding engine on request.
     system_instruction = (
-        "You are a helpful, simple, and powerful AI Assistant and Coding Expert. "
-        "When the user greets you normally (like 'hi' or 'hello'), reply conversationally, simply and directly "
-        "without drawing large system capability tables or matrices unless explicitly asked. "
-        "If they ask you to write code, program apps, analyze files, or fix bugs, become an expert software engineer "
-        "and provide fully functioning, clear, production-ready code blocks inside markdown styling."
+        "You are a helpful, direct, and powerful AI Assistant and Coding Expert. "
+        "Keep greeting responses simple, short, and friendly (e.g., 'Hello! How can I help you today?'). "
+        "When asked to write code, provide clean, efficient, functional code blocks inside standard markdown syntax."
     )
     
     parts_list = []
@@ -122,14 +138,14 @@ def run_multimodal_brain(prompt_text, conversation_history, image_b64=None, mime
     else:
         return f"🚨 API Connection Error ({response.status_code}): {response.text}"
 
-# --- APP LAYOUT RENDERING VIEWPORTS ---
+# --- PRIMARY DISPLAY FRAME ---
 current_chat = st.session_state.sessions[st.session_state.current_session]
 
 st.markdown("""
     <div class='premium-card'>
-        <h3 style='color:#ff8700; margin-top:0;'>✨ Quantum Workspace Console</h3>
+        <h3 style='color:#ff8700; margin-top:0;'>✨ Quantum Workspace</h3>
         <p style='color:#9e9eaf; font-size:14px; margin-bottom:0;'>
-            Ask questions, attach files, or generate programs instantly. The unified engine processes standard queries and advanced script coding seamlessly.
+            Seamless Gemini UI Console. Use the clean media capsule embedded inside the search layout bar below to run code generation and computer vision queries.
         </p>
     </div>
 """, unsafe_allow_html=True)
@@ -141,28 +157,39 @@ for message in current_chat["messages"]:
 
 st.markdown("---")
 
-# --- UNIFIED INLINE UTILITY BOTTOM ROW ---
+# --- CUSTOM PILL SEARCH BAR INCORPORATING EMBEDDED '+' ICON ---
 image_base64_string = None
 image_mime = "image/jpeg"
 
-col_btn, col_txt = st.columns([1, 4])
+# Using unified layout columns with minimal gaps to mock a singular interactive capsule entry row
+col_plus_icon, col_input_field, col_submit_btn = st.columns([0.4, 4.8, 0.8])
 
-with col_btn:
-    # Minimal input image upload element placed completely inline right beside search line rows
-    uploaded_image = st.file_uploader("🖼️ [+] Add Media", type=["png", "jpg", "jpeg"], key="inline_media_uploader", label_visibility="collapsed")
+with col_plus_icon:
+    # Minimal text label heading acts as the structural alignment anchor for the inline file stream clicker
+    st.caption("➕ Attachment")
+    uploaded_image = st.file_uploader("Upload", type=["png", "jpg", "jpeg"], key="gemini_style_icon_uploader", label_visibility="collapsed")
     if uploaded_image is not None:
         img = Image.open(uploaded_image)
-        st.image(img, caption="Image Active", width=90)
+        # Visual clip tag showing file state below the bar frame
+        st.image(img, caption="Media Loaded ✅", width=55)
         buffered = io.BytesIO()
         img.save(buffered, format="JPEG")
         image_base64_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-with col_txt:
-    # Streamlined interactive text field block input mapping tools
-    user_input = st.text_input("Message the AI or type code requests...", placeholder="Say hi, ask for a Python script, or pass media instructions...", key="inline_search_query", label_visibility="collapsed")
-    submit_action = st.button("Send Query 🚀", use_container_width=True)
+with col_input_field:
+    user_input = st.text_input(
+        "Ask Gemini...", 
+        placeholder="Ask a question, request code generation, or query attached visual elements...", 
+        key="gemini_search_bar_string",
+        label_visibility="collapsed"
+    )
 
-# Processing logic execution pipeline
+with col_submit_btn:
+    st.markdown('<div class="submit-pill-btn">', unsafe_allow_html=True)
+    submit_action = st.button("Send 🚀", use_container_width=True, key="pill_action_fire")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Processing logic pipeline
 if submit_action and user_input:
     with st.chat_message("user"):
         st.markdown(user_input)
