@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from google import genai
+from google.genai import types
 from PIL import Image
 import io
 
@@ -20,8 +21,7 @@ page = st.sidebar.radio(
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
     client = genai.Client(api_key=api_key)
-    # Using the highly capable and fast flash model
-    AI_MODEL = 'gemini-2.5-flash' 
+    AI_MODEL = 'gemini-3.5-flash' 
 except Exception:
     st.error("API Key missing! Please make sure GEMINI_API_KEY is configured in your Streamlit Secrets.")
     st.stop()
@@ -46,7 +46,6 @@ if page == "💬 AI Agent Chat & Search":
         with st.chat_message("assistant"):
             response_placeholder = st.empty()
             
-            # Here we pass Google Search as a built-in tool directly to Gemini!
             response = client.models.generate_content(
                 model=AI_MODEL,
                 contents=prompt,
@@ -98,24 +97,34 @@ elif page == "📊 Advanced Data Analyst":
 # --- FEATURE 3: AI IMAGE GENERATOR ---
 elif page == "🎨 AI Image Generator":
     st.header("🎨 Text-to-Image AI Canvas")
-    st.write("Type a descriptive text prompt below to generate custom images using the Google AI model.")
+    st.write("Type a descriptive text prompt below to generate custom images using the free Gemini tier.")
     
-    image_prompt = st.text_input("Enter details of the image you want to create:", placeholder="A futuristic cybernetic city at sunset, highly detailed...")
+    image_prompt = st.text_input("Enter details of the image you want to create:", placeholder="A cute futuristic robot painting on a canvas, digital art...")
     
     if st.button("Generate Image ✨"):
         if image_prompt:
             with st.spinner("Bringing your imagination to life..."):
                 try:
-                    # Request image generation using the prompt text
-                    result = client.models.generate_images(
-                        model='imagen-3.0-generate-002',
-                        prompt=image_prompt,
-                        config={'number_of_images': 1}
+                    # Using standard multimodal generation with an IMAGE modality request
+                    response = client.models.generate_content(
+                        model=AI_MODEL,
+                        contents=image_prompt,
+                        config=types.GenerateContentConfig(
+                            response_modalities=["IMAGE"]
+                        )
                     )
                     
-                    for generated_image in result.generated_images:
-                        image = Image.open(io.BytesIO(generated_image.image.image_bytes))
-                        st.image(image, caption=f"Result for: '{image_prompt}'", use_container_width=True)
+                    image_found = False
+                    for part in response.parts:
+                        if part.inline_data:
+                            # Convert bytes back to a displayable PIL Image format
+                            image = part.as_image()
+                            st.image(image, caption=f"Result for: '{image_prompt}'", use_container_width=True)
+                            image_found = True
+                            
+                    if not image_found:
+                        st.warning("The model processed your request but didn't output an image structure. Try another prompt.")
+                        
                 except Exception as e:
                     st.error(f"Image generation failed: {e}")
         else:
