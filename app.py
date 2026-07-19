@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import google.generativeai as genai
+import requests
 import io
 
 # --- APP CONFIGURATION ---
@@ -15,15 +15,32 @@ page = st.sidebar.radio(
     ["💬 AI Agent Chat", "📊 Advanced Data Analyst", "🎨 AI Art Concept Generator", "📝 Smart Document Reader"]
 )
 
-# --- FETCH SECRET API KEY ---
+# --- FETCH SECRET API KEY & DEFINE API FUNCTION ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key)
-    # Using the current standard free tier model string
-    model = genai.GenerativeModel('gemini-1.5-flash') 
 except Exception:
     st.error("API Key missing! Please make sure GEMINI_API_KEY is configured in your Streamlit Secrets.")
     st.stop()
+
+def ask_gemini(prompt_text):
+    # Direct endpoint for stable free tier requests
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt_text}]
+        }]
+    }
+    
+    response = requests.post(url, json=payload, headers=headers)
+    
+    if response.status_code == 200:
+        try:
+            return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception:
+            return "Error parsing response structure from the server."
+    else:
+        return f"API Connection Error (Status Code: {response.status_code}): {response.text}"
 
 # --- FEATURE 1: AI AGENT CHAT ---
 if page == "💬 AI Agent Chat":
@@ -43,14 +60,10 @@ if page == "💬 AI Agent Chat":
         st.session_state.messages.append({"role": "user", "content": prompt})
         
         with st.chat_message("assistant"):
-            response_placeholder = st.empty()
-            try:
-                response = model.generate_content(prompt)
-                ai_response = response.text
-                response_placeholder.markdown(ai_response)
+            with st.spinner("Thinking..."):
+                ai_response = ask_gemini(prompt)
+                st.markdown(ai_response)
                 st.session_state.messages.append({"role": "assistant", "content": ai_response})
-            except Exception as e:
-                st.error(f"Chat failed to load: {e}")
 
 # --- FEATURE 2: ADVANCED DATA ANALYST ---
 elif page == "📊 Advanced Data Analyst":
@@ -100,13 +113,10 @@ elif page == "🎨 AI Art Concept Generator":
     if st.button("Generate Concept Design ✨"):
         if image_prompt:
             with st.spinner("Expanding your design concepts..."):
-                try:
-                    art_prompt = f"Act as an expert digital artist. Create a highly descriptive layout blueprint, color palette, lighting details, and Midjourney style prompts based on this idea: '{image_prompt}'"
-                    response = model.generate_content(art_prompt)
-                    st.subheader("💡 Digital Art Blueprint")
-                    st.markdown(response.text)
-                except Exception as e:
-                    st.error(f"Failed to generate layout: {e}")
+                art_prompt = f"Act as an expert digital artist. Create a highly descriptive layout blueprint, color palette, lighting details, and Midjourney style prompts based on this idea: '{image_prompt}'"
+                ai_response = ask_gemini(art_prompt)
+                st.subheader("💡 Digital Art Blueprint")
+                st.markdown(ai_response)
         else:
             st.warning("Please type a description prompt first!")
 
@@ -127,10 +137,7 @@ elif page == "📝 Smart Document Reader":
         
         if st.button("Analyze Document 🧠"):
             with st.spinner("Analyzing document structure..."):
-                try:
-                    analysis_prompt = f"Please process the following text according to this directive: '{action}'. Here is the text:\n\n{document_text}"
-                    response = model.generate_content(analysis_prompt)
-                    st.subheader("💡 AI Analysis Output")
-                    st.markdown(response.text)
-                except Exception as e:
-                    st.error(f"Analysis failed: {e}")
+                analysis_prompt = f"Please process the following text according to this directive: '{action}'. Here is the text:\n\n{document_text}"
+                ai_response = ask_gemini(analysis_prompt)
+                st.subheader("💡 AI Analysis Output")
+                st.markdown(ai_response)
