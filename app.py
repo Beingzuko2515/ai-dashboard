@@ -6,21 +6,21 @@ import base64
 from PIL import Image
 import io
 
-# --- PREMIUM MIDNIGHT DARK MODE WITH AMBIENT ORANGE ACCENTS ---
-st.set_page_config(page_title="Global AI Dashboard", layout="wide", initial_sidebar_state="expanded")
+# --- PREMIUM MIDNIGHT CONFIGURATION & HOVER GLOW LAYOUT ---
+st.set_page_config(page_title="Quantum Omni Hub", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
     <style>
-    /* Premium Deep Dark Theme */
+    /* Premium Immersive Deep Dark Theme */
     .stApp {
         background-color: #0d0d14 !important;
         color: #e2e2ec !important;
     }
     
-    /* Clean feature info card with glowing hover effect */
+    /* Dynamic Cyber Card Panels */
     .feature-card {
-        background: rgba(20, 20, 30, 0.7);
-        padding: 20px;
+        background: rgba(20, 20, 30, 0.75);
+        padding: 22px;
         border-radius: 12px;
         border: 1px solid rgba(255, 255, 255, 0.06);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
@@ -28,12 +28,12 @@ st.markdown("""
         margin-bottom: 20px;
     }
     .feature-card:hover {
-        border-color: rgba(255, 135, 0, 0.3);
+        border-color: rgba(255, 135, 0, 0.35);
         background: rgba(255, 135, 0, 0.01);
-        box-shadow: 0 0 20px rgba(255, 135, 0, 0.05);
+        box-shadow: 0 0 20px rgba(255, 135, 0, 0.06);
     }
     
-    /* Unified file picker custom border styles */
+    /* Inline File Drop Zone Stylings */
     div[data-testid="stFileUploader"] {
         background-color: rgba(15, 15, 25, 0.8) !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -44,7 +44,7 @@ st.markdown("""
         border-color: #ff8700 !important;
     }
     
-    /* Smooth modern chat chat logs layout frames */
+    /* Clean Response Chat Bubbles */
     .stChatMessage {
         border-radius: 12px;
         margin-bottom: 10px;
@@ -53,41 +53,40 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- APP CONFIGURATION & STATE ROUTING ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# --- APPLICATION WORKSPACE STORAGE HUB ---
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-# --- MULTI-FEATURE ROUTER SIDEBAR ---
+# --- CORE SIDEBAR ROUTER ---
 with st.sidebar:
-    st.title("🚀 Navigation Menu")
-    st.caption("GO TO FEATURE:")
-    feature = st.radio(
-        "Select Workflow", 
-        ["💬 AI Agent Chat & Code Gen", "🖼️ AI Art Concept Generator", "📊 Advanced Data Analyst"],
+    st.title("🔮 Core Workspace")
+    st.caption("SELECT ACTIVE HUBS:")
+    selected_menu = st.radio(
+        "Menu Router",
+        ["💬 AI Agent Chat & Code Gen", "🖼️ AI Image Studio", "📊 Interactive Data Matrix"],
         label_visibility="collapsed"
     )
-    
     st.markdown("---")
-    if st.button("🗑️ Clear Active History", use_container_width=True):
-        st.session_state.messages = []
+    if st.button("🗑️ Reset Application States", use_container_width=True):
+        st.session_state.chat_history = []
         st.rerun()
 
-# --- CONNECT SECURELY TO THE LATEST GEMINI CORE ROUTER ---
+# --- BACKEND API VAULT CONFIGURATION ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except Exception:
     st.error("Missing API Key! Please configure GEMINI_API_KEY inside Streamlit Secrets.")
     st.stop()
 
-def run_gemini_core(prompt_text, image_b64=None, mime_type="image/jpeg"):
-    # Target standard verified stable deployment model endpoint 
+# --- RUN SECURE STABLE TEXT GATEWAY ---
+def fetch_text_response(prompt_text, image_b64=None, mime_type="image/jpeg"):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
     
     system_instruction = (
-        "You are a helpful, simple, friendly AI Assistant and Expert Code Generator. "
-        "Keep normal conversational greetings short and clean (e.g. 'Hello! How can I help you today?'). "
-        "When asked to write code, provide fully functional, clean, well-commented code blocks inside standard markdown blocks."
+        "You are an Elite AI Assistant, Coding Sandbox, and Architecture Expert. "
+        "Keep conversational greetings brief and friendly. When generating code blueprints or folder trees, "
+        "always supply fully functional, clean, well-commented code scripts within standard markdown styling blocks."
     )
     
     parts_list = []
@@ -101,94 +100,166 @@ def run_gemini_core(prompt_text, image_b64=None, mime_type="image/jpeg"):
     }
     
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        if response.status_code == 200:
-            return response.json()["candidates"][0]["content"]["parts"][0]["text"]
-        else:
-            return f"🚨 API Connection Error (Status Code: {response.status_code}). Check your project billing/secrets."
+        res = requests.post(url, json=payload, headers=headers)
+        if res.status_code == 200:
+            return res.json()["candidates"][0]["content"]["parts"][0]["text"]
+        return f"🚨 API Connection Error ({res.status_code}): {res.text}"
     except Exception as e:
-        return f"🚨 Connection Failed: {str(e)}"
+        return f"🚨 Request failed: {str(e)}"
 
-# --- WORKSPACE DASHBOARD VIEWPORTS ---
-if feature == "💬 AI Agent Chat & Code Gen":
+# --- IMAGEN 3 ERROR-FREE ART STUDIO ---
+def fetch_generated_art(prompt_text):
+    url = f"https://generativelanguage.googleapis.com/v1/models/imagen-3.0-generate-002:predict?key={api_key}"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "instances": [{"prompt": prompt_text}],
+        "parameters": {
+            "sampleCount": 1,
+            "aspectRatio": "1:1",
+            "outputMimeType": "image/jpeg"
+        }
+    }
+    try:
+        res = requests.post(url, json=payload, headers=headers)
+        if res.status_code == 200:
+            img_b64 = res.json()["predictions"][0]["bytesBase64Encoded"]
+            return base64.b64decode(img_b64)
+        return f"🚨 Studio Generation Failure: {res.json().get('error', {}).get('message', res.text)}"
+    except Exception as e:
+        return f"🚨 Request Error: {str(e)}"
+
+# ==========================================
+# --- WORKSPACE ROUTING MANAGEMENT VIEWS ---
+# ==========================================
+
+if selected_menu == "💬 AI Agent Chat & Code Gen":
     st.markdown("""
         <div class='feature-card'>
-            <h2 style='color:#ff8700; margin-top:0;'>💬 AI Agent Chat & Code Generator</h2>
+            <h2 style='color:#ff8700; margin-top:0;'>💬 AI Assistant & Custom Code Sandbox</h2>
             <p style='color:#9e9eaf; font-size:14px; margin-bottom:0;'>
-                Type your request and press <b>Enter</b> to talk or generate programs instantly. Use the optional media clip directly below to include vision context.
+                Execute complex prompts, generate clean scripts, or map app file directories instantly. Press <b>Enter</b> to pass commands.
             </p>
         </div>
     """, unsafe_allow_html=True)
     
-    # Display message history streams
-    for msg in st.session_state.messages:
+    # Render developer tool panels
+    c_lang, c_tree = st.columns(2)
+    with c_lang:
+        dev_lang = st.selectbox("🌐 Target Programming Language (Forces Output Tuning):", ["None / General", "Python", "JavaScript / TypeScript", "HTML & Tailwind CSS", "SQL Database Script"])
+    with c_tree:
+        generate_tree = st.checkbox("📂 Force AI to generate a complete visual folder structure blueprint", value=False)
+        
+    st.markdown("---")
+    
+    # Display message threads
+    for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             
-    # Inline Media Tray Component completely cleared of broken frameworks
+    # Minimalist inline attachment tray component
     image_base64_string = None
-    image_mime = "image/jpeg"
-    uploaded_file = st.file_uploader("➕ Attach optional image context to search:", type=["png", "jpg", "jpeg"])
+    uploaded_file = st.file_uploader("🖼️ Attach optional image target to conversation line context:", type=["png", "jpg", "jpeg"])
     if uploaded_file is not None:
         img = Image.open(uploaded_file)
-        st.image(img, caption="Media context linked", width=120)
+        st.image(img, caption="Visual computer vision stream mapped", width=120)
         buffered = io.BytesIO()
         img.save(buffered, format="JPEG")
         image_base64_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
         
     st.markdown("---")
     
-    # Native Chat Input component automatically triggers on Enter and clears out old inputs instantly
-    if user_input := st.chat_input("Ask me anything or ask me to write a script..."):
+    # Native chat input (automatically triggers on enter and deletes old entries seamlessly)
+    if user_prompt := st.chat_input("Ask a question, analyze vision data, or compile code configurations..."):
+        # Synthesize custom developer instructions dynamically into the query string
+        modified_prompt = user_prompt
+        if dev_lang != "None / General":
+            modified_prompt += f"\n\n[Developer Instruction: Explicitly format all code blocks using {dev_lang}. Ensure production stability.]"
+        if generate_tree:
+            modified_prompt += "\n\n[Developer Instruction: Include a clean, stylized visual ASCII folder structure diagram layout illustrating where files reside.]"
+            
         with st.chat_message("user"):
-            st.markdown(user_input)
-        st.session_state.messages.append({"role": "user", "content": user_input})
+            st.markdown(user_prompt)
+        st.session_state.chat_history.append({"role": "user", "content": user_prompt})
         
         with st.chat_message("assistant"):
-            with st.spinner("Processing framework query..."):
-                response_text = run_gemini_core(user_input, image_base64_string, image_mime)
-                st.markdown(response_text)
-        st.session_state.messages.append({"role": "assistant", "content": response_text})
+            with st.spinner("Compiling structural output vectors..."):
+                reply = fetch_text_response(modified_prompt, image_base64_string)
+                st.markdown(reply)
+        st.session_state.chat_history.append({"role": "assistant", "content": reply})
         st.rerun()
 
-elif feature == "🖼️ AI Art Concept Generator":
+elif selected_menu == "🖼️ AI Image Studio":
     st.markdown("""
         <div class='feature-card'>
-            <h2 style='color:#ff8700; margin-top:0;'>🖼️ AI Art Concept Generator</h2>
+            <h2 style='color:#ff8700; margin-top:0;'>🎨 Text-to-Image AI Canvas</h2>
             <p style='color:#9e9eaf; font-size:14px; margin-bottom:0;'>
-                Describe the image concept you want to create below. The AI will engineer a comprehensive prompt layout structure for you.
+                Describe ideas below to generate art elements via the error-free Imagen 3 pipeline.
             </p>
         </div>
     """, unsafe_allow_html=True)
     
-    art_prompt = st.text_input("Enter creative script prompt:", placeholder="e.g. A futuristic city at sunset...")
-    if st.button("Generate Layout Prompt ✨"):
+    art_prompt = st.text_input("Describe visual scene ideas:", placeholder="A modern cute kitten sitting on a cyber neon desk workspace...")
+    
+    # Embedded dynamic toggle for prompt booster mechanics
+    boost_prompt = st.checkbox("🚀 Activate Smart AI Prompt Enhancer (Injects photorealistic aesthetic framing parameters)", value=True)
+    
+    if st.button("Generate Asset ✨", use_container_width=True):
         if art_prompt:
-            with st.spinner("Engineering creative prompt blueprint..."):
-                structured_query = f"Provide a highly descriptive, visually descriptive prompt layout for a digital artist based on: {art_prompt}"
-                art_response = run_gemini_core(structured_query)
-                st.info(art_response)
+            final_prompt = art_prompt
+            if boost_prompt:
+                with st.spinner("Text AI optimization engine running..."):
+                    booster_query = f"Expand this brief sentence description into a highly vivid cinematic masterpiece generation prompt rich with lighting styles and high-detail digital rendering terms: {art_prompt}"
+                    final_prompt = fetch_text_response(booster_query)
+            
+            with st.spinner("Generating image canvas..."):
+                result = fetch_generated_art(final_prompt)
+                if isinstance(result, bytes):
+                    st.image(result, caption="AI Concept Masterpiece Asset", use_container_width=True)
+                else:
+                    st.error(result)
         else:
-            st.warning("Please enter a description text prompt first!")
+            st.warning("Please type a scene description layout details first!")
 
-elif feature == "📊 Advanced Data Analyst":
+elif selected_menu == "📊 Interactive Data Matrix":
     st.markdown("""
         <div class='feature-card'>
-            <h2 style='color:#ff8700; margin-top:0;'>📊 Advanced Data Analyst</h2>
+            <h2 style='color:#ff8700; margin-top:0;'>📊 Interactive Analytics Grid</h2>
             <p style='color:#9e9eaf; font-size:14px; margin-bottom:0;'>
-                Drop a structural data layout spreadsheet here to extract information summaries instantly.
+                Upload a structured file table (.csv) below to parse indicators and render multi-style graphs.
             </p>
         </div>
     """, unsafe_allow_html=True)
     
-    data_file = st.file_uploader("Upload spreadsheet data context:", type=["csv"])
-    if data_file is not None:
-        df = pd.read_csv(data_file)
-        st.success("Matrix successfully parsed!")
+    csv_file = st.file_uploader("Upload dataset target table:", type=["csv"])
+    if csv_file is not None:
+        df = pd.read_csv(csv_file)
+        st.success("Matrix successfully parsed into active dataframe!")
         st.dataframe(df.head(5), use_container_width=True)
         
-        if st.button("Analyze Sheet Metrics 📈"):
-            with st.spinner("Calculating data insights..."):
-                analytics_query = f"Summarize the structural intent of a table dataset containing these columns: {df.columns.tolist()}"
-                analytics_response = run_gemini_core(analytics_query)
-                st.markdown(analytics_response)
+        st.markdown("---")
+        st.subheader("📈 Dynamic Multi-Variable Plotting Station")
+        numeric_columns = df.select_dtypes(include=['number']).columns.tolist()
+        
+        if numeric_columns:
+            c_target, c_style = st.columns(2)
+            with c_target:
+                target_col = st.selectbox("Choose data parameter row to inspect visually:", numeric_columns)
+            with c_style:
+                chart_style = st.selectbox("Select Visual Chart Engine Mode:", ["Line Chart", "Area Chart", "Bar Chart"])
+            
+            # Draw real-time graphics frames
+            if chart_style == "Line Chart":
+                st.line_chart(df[target_col].head(40))
+            elif chart_style == "Area Chart":
+                st.area_chart(df[target_col].head(40))
+            elif chart_style == "Bar Chart":
+                st.bar_chart(df[target_col].head(40))
+                
+            st.markdown("---")
+            if st.button("Extract Deep Context Data Summaries 📝", use_container_width=True):
+                with st.spinner("Calculating mathematical matrix summaries..."):
+                    analytics_query = f"Provide a clean, bulleted data metrics analysis profiling columns: {df.columns.tolist()}. Identify insights based on these row headers."
+                    ans = fetch_text_response(analytics_query)
+                    st.info(ans)
+        else:
+            st.warning("No functional numeric variables detected inside the selected sheet format to plot graphic charts.")
