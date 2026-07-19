@@ -6,64 +6,81 @@ import base64
 from PIL import Image
 import io
 
-# --- APP CONFIGURATION & DYNAMIC ANIMATED RGB BORDER ---
-st.set_page_config(page_title="Omni-Agent Hub", layout="wide", initial_sidebar_state="expanded")
+# --- PREMIUM SCREEN LAYOUT & CUSTOM STYLING ---
+st.set_page_config(page_title="Quantum AI Workspace", layout="wide", initial_sidebar_state="expanded")
 
-# Inject CSS for an awesome animated RGB glowing frame and accessible typography
+# Inject Premium UI and RGB Hover Effects
 st.markdown("""
     <style>
-    /* Animated RGB Border Frame around the entire app window */
+    /* Premium Animated RGB Border Frame */
     .stApp {
-        border: 8px solid transparent;
-        border-image: linear-gradient(to bottom right, #ff007f, #7f00ff, #00f0ff, #ff007f) 1;
-        animation: rgb-glow 6s linear infinite;
+        border: 6px solid transparent;
+        border-image: linear-gradient(to right, #ff007f, #7f00ff, #00f0ff, #ff007f) 1;
+        animation: premium-flow 8s linear infinite;
     }
-    @keyframes rgb-glow {
+    @keyframes premium-flow {
         0% { filter: hue-rotate(0deg); }
         100% { filter: hue-rotate(360deg); }
     }
     
-    /* Clean welcome message styling */
-    .welcome-card {
-        background: linear-gradient(135deg, rgba(127,0,255,0.1), rgba(0,240,255,0.05));
-        padding: 25px;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.15);
-        margin-bottom: 20px;
+    /* Elegant Welcome Overlay Card */
+    .premium-welcome {
+        background: linear-gradient(135deg, rgba(30, 30, 45, 0.95), rgba(15, 15, 25, 0.95));
+        padding: 30px;
+        border-radius: 16px;
+        border: 1px solid rgba(0, 240, 255, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        margin-bottom: 25px;
     }
     
-    .stChatMessage { border-radius: 12px; margin-bottom: 12px; padding: 14px; }
+    /* Interactive Upload Box Wrapper with Premium Hover Effect */
+    div[data-testid="stFileUploader"] {
+        background-color: rgba(20, 20, 35, 0.6) !important;
+        border: 2px dashed rgba(127, 0, 255, 0.4) !important;
+        border-radius: 12px !important;
+        padding: 10px !important;
+        transition: all 0.4s ease-in-out !important;
+    }
+    div[data-testid="stFileUploader"]:hover {
+        border-color: #00f0ff !important;
+        background-color: rgba(0, 240, 255, 0.05) !important;
+        box-shadow: 0 0 18px rgba(0, 240, 255, 0.4) !important;
+        transform: translateY(-2px);
+    }
+    
+    /* Smooth Modern Chat Bubble Enhancements */
+    .stChatMessage { border-radius: 14px; margin-bottom: 12px; padding: 16px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- TRACK SESSION HISTORY SYSTEM ---
+# --- WORKSPACE MEMORY ENGINE ---
 if "sessions" not in st.session_state:
     st.session_state.sessions = {
-        "default": {"name": "Main Chat Hub 💬", "messages": []}
+        "default": {"name": "Quantum Main Session 💬", "messages": []}
     }
 if "current_session" not in st.session_state:
     st.session_state.current_session = "default"
 
-# --- SIDEBAR SESSION DRAWER ---
+# --- SIDEBAR: HISTORICAL WORKSPACE MANAGER ---
 with st.sidebar:
-    st.title("🗂️ Chat Workspaces")
-    if st.button("➕ Start New Chat", use_container_width=True):
+    st.title("⚡ Workspaces")
+    if st.button("➕ Open Premium Canvas", use_container_width=True):
         new_id = str(uuid.uuid4())
         st.session_state.sessions[new_id] = {"name": f"Session {len(st.session_state.sessions)+1}", "messages": []}
         st.session_state.current_session = new_id
         st.rerun()
         
     st.markdown("---")
-    st.subheader("Saved Chats")
+    st.subheader("Active Session History")
     for session_id, session_data in list(st.session_state.sessions.items()):
         lbl = session_data["name"]
         if session_id == st.session_state.current_session:
-            lbl = f"▶️ {lbl}"
+            lbl = f"🔮 {lbl}"
         if st.button(lbl, key=f"session_{session_id}", use_container_width=True):
             st.session_state.current_session = session_id
             st.rerun()
 
-# --- CONNECT TO GEMINI API DIRECT ENGINE ---
+# --- CONNECT TO DIRECT GEMINI CORE ROUTER ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except Exception:
@@ -71,21 +88,16 @@ except Exception:
     st.stop()
 
 def run_multimodal_brain(prompt_text, conversation_history, image_b64=None, mime_type="image/jpeg"):
-    # Target endpoint for gemini-3.5-flash
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
     
     system_instruction = (
-        "You are an Omni-Tool Intelligence Engine. You automatically identify the user's intent. "
-        "If they give you data frames/CSV shapes, run analysis. If they attach images, detail them. "
-        "If they request art templates, draw an expansive architectural Markdown layout blueprint for concepts. "
-        "Always structure insights gracefully using tables, bolds, and list grids."
+        "You are an Elite Multi-Modal System Agent. You adapt natively to all elements. "
+        "If images are provided, inspect and outline them. If text sheets are uploaded, profile the data. "
+        "Structure all answers inside beautiful markdown formats with neat section tabs."
     )
     
-    # Bundle text thread history turns safely
     parts_list = []
-    
-    # Incorporate Image attachment inside payload if provided
     if image_b64:
         parts_list.append({
             "inlineData": {
@@ -94,7 +106,6 @@ def run_multimodal_brain(prompt_text, conversation_history, image_b64=None, mime
             }
         })
         
-    # Append actual prompt request text
     parts_list.append({"text": prompt_text})
     
     payload = {
@@ -107,74 +118,73 @@ def run_multimodal_brain(prompt_text, conversation_history, image_b64=None, mime
         try:
             return response.json()["candidates"][0]["content"]["parts"][0]["text"]
         except Exception:
-            return "⚠️ Server connection active, but could not parse the response data structure."
+            return "⚠️ Data verified, but engine layout parsing failed."
     else:
         return f"🚨 API Server Connection Error ({response.status_code}): {response.text}"
 
-# --- CORE USER INTERFACE CANVAS ---
+# --- ACTIVE WORKSPACE COMPONENT ---
 current_chat = st.session_state.sessions[st.session_state.current_session]
 
-# Header Showcase Message Banner
+# Premium Welcome Interface Banner
 st.markdown("""
-    <div class='welcome-card'>
-        <h2>✨ Welcome to the Intelligent Super-Agent Suite</h2>
-        <p>Type queries freely! Drop images to analyze them, upload data sheets to graph them, or brainstorm code out loud. The underlying pipeline automatically routes actions based on your input parameters.</p>
+    <div class='premium-welcome'>
+        <h2 style='color:#00f0ff; margin-top:0;'>✨ Quantum Workspace Console</h2>
+        <p style='color:#b0b0d0; font-size:15px; margin-bottom:0;'>
+            Our premium responsive engine natively merges data indexing, contextual chat, and computer vision workflows. 
+            Hover over the interface controls below to experience the responsive reactive canvas framework.
+        </p>
     </div>
 """, unsafe_allow_html=True)
 
-# --- MODERN IN-LINE MULTIMEDIA SEARCH & UPLOAD BOX ---
-st.write("### 🔍 Omni Search & Media Attachment Input")
-col_upload, col_data = st.columns(2)
+# --- SEARCH BAR CONTROLS WITH IMAGE ICON ATTACHMENT ---
+st.write("### 🔍 Premium Search Input & Image attachment Node")
 
+col_img, col_csv = st.columns(2)
 image_base64_string = None
 image_mime = "image/jpeg"
 
-with col_upload:
-    uploaded_image = st.file_uploader("🖼️ Attach image here to query visual elements:", type=["png", "jpg", "jpeg"])
+with col_img:
+    # This serves as the Image Icon tool container built directly into the workflow layer
+    uploaded_image = st.file_uploader("🖼️ Click/Drop an image to include it in your next search prompt:", type=["png", "jpg", "jpeg"])
     if uploaded_image is not None:
-        # Open and show file element
         img = Image.open(uploaded_image)
-        st.image(img, caption="Loaded Input Target", width=220)
+        st.image(img, caption="Loaded Search Thumbnail Attachment", width=180)
         
-        # Parse into standard transmission payload bytes
         buffered = io.BytesIO()
         img.save(buffered, format="JPEG")
         image_base64_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
-        image_mime = "image/jpeg"
 
-with col_data:
-    uploaded_csv = st.file_uploader("📊 Drop a dataset CSV file here to chart numeric rows:", type=["csv"])
+with col_csv:
+    uploaded_csv = st.file_uploader("📊 Include a CSV sheet into your search context:", type=["csv"])
     if uploaded_csv is not None:
         df = pd.read_csv(uploaded_csv)
-        st.success(f"Loaded matrix layout: {uploaded_csv.name}")
+        st.success(f"Context verified: {uploaded_csv.name}")
         st.dataframe(df.head(2), use_container_width=True)
         numeric_fields = df.select_dtypes(include=['number']).columns.tolist()
         if len(numeric_fields) >= 1:
             st.line_chart(df[numeric_fields[0]].head(15))
-        csv_context = f"\n[Data reference attached: '{uploaded_csv.name}' Shape info: {df.shape}. Numeric variables: {numeric_fields}]"
+        csv_context = f"\n[User table resource reference: '{uploaded_csv.name}' Shape={df.shape}. Columns={numeric_fields}]"
 
 st.markdown("---")
 
-# Render active timeline conversation messages 
+# Render active timeline conversations
 for message in current_chat["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Text Query Execution Strip
-if user_input := st.chat_input("Write a prompt, request an art template layout, or analyze visual contexts..."):
+# Text Prompt Entry Field
+if user_input := st.chat_input("Enter your request here..."):
     with st.chat_message("user"):
         st.markdown(user_input)
         
-    # Append spreadsheet contexts to text string seamlessly if active
     final_query = user_input + (csv_context if 'csv_context' in locals() else "")
     current_chat["messages"].append({"role": "user", "content": user_input})
     
-    # Auto adjust session label name dynamically
     if len(current_chat["messages"]) == 1:
         current_chat["name"] = user_input[:20] + "..." if len(user_input) > 20 else user_input
         
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing parameters autonomously..."):
+        with st.spinner("Processing workflows..."):
             ai_response = run_multimodal_brain(final_query, current_chat["messages"][:-1], image_base64_string, image_mime)
             st.markdown(ai_response)
             current_chat["messages"].append({"role": "assistant", "content": ai_response})
