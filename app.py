@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from google import genai
+import google.generativeai as genai
 import io
 
 # --- APP CONFIGURATION ---
@@ -18,8 +18,9 @@ page = st.sidebar.radio(
 # --- FETCH SECRET API KEY ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
-    client = genai.Client(api_key=api_key)
-    AI_MODEL = 'gemini-2.5-flash' # Using the highly stable and fast 2.5 Flash free model
+    genai.configure(api_key=api_key)
+    # Using the most globally compatible free text model
+    model = genai.GenerativeModel('gemini-pro') 
 except Exception:
     st.error("API Key missing! Please make sure GEMINI_API_KEY is configured in your Streamlit Secrets.")
     st.stop()
@@ -27,7 +28,7 @@ except Exception:
 # --- FEATURE 1: AI AGENT CHAT ---
 if page == "💬 AI Agent Chat":
     st.header("💬 AI Agent Chat")
-    st.write("Ask anything! The agent will use its general knowledge base to solve problems.")
+    st.write("Ask anything! The agent will use its knowledge base to solve problems.")
     
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -43,15 +44,13 @@ if page == "💬 AI Agent Chat":
         
         with st.chat_message("assistant"):
             response_placeholder = st.empty()
-            
-            response = client.models.generate_content(
-                model=AI_MODEL,
-                contents=prompt
-            )
-            
-            ai_response = response.text
-            response_placeholder.markdown(ai_response)
-            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            try:
+                response = model.generate_content(prompt)
+                ai_response = response.text
+                response_placeholder.markdown(ai_response)
+                st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            except Exception as e:
+                st.error(f"Chat failed to load: {e}")
 
 # --- FEATURE 2: ADVANCED DATA ANALYST ---
 elif page == "📊 Advanced Data Analyst":
@@ -94,7 +93,7 @@ elif page == "📊 Advanced Data Analyst":
 # --- FEATURE 3: AI ART CONCEPT GENERATOR ---
 elif page == "🎨 AI Art Concept Generator":
     st.header("🎨 AI Art Concept Engine")
-    st.write("Since image rendering requires a paid tier, this feature uses AI to expand your idea into beautiful, highly detailed artwork prompt descriptions and structure layouts.")
+    st.write("This feature uses AI to expand your idea into beautiful, highly detailed artwork prompt descriptions and structure layouts.")
     
     image_prompt = st.text_input("Enter a basic art idea:", placeholder="A cute robot painting on a canvas...")
     
@@ -102,11 +101,8 @@ elif page == "🎨 AI Art Concept Generator":
         if image_prompt:
             with st.spinner("Expanding your design concepts..."):
                 try:
-                    art_prompt = f"Act as an expert digital artist. Create a highly descriptive layout blueprint, color palette, lighting details, and midjourney style prompts based on this idea: '{image_prompt}'"
-                    response = client.models.generate_content(
-                        model=AI_MODEL,
-                        contents=art_prompt
-                    )
+                    art_prompt = f"Act as an expert digital artist. Create a highly descriptive layout blueprint, color palette, lighting details, and Midjourney style prompts based on this idea: '{image_prompt}'"
+                    response = model.generate_content(art_prompt)
                     st.subheader("💡 Digital Art Blueprint")
                     st.markdown(response.text)
                 except Exception as e:
@@ -131,11 +127,10 @@ elif page == "📝 Smart Document Reader":
         
         if st.button("Analyze Document 🧠"):
             with st.spinner("Analyzing document structure..."):
-                analysis_prompt = f"Please process the following text according to this directive: '{action}'. Here is the text:\n\n{document_text}"
-                
-                response = client.models.generate_content(
-                    model=AI_MODEL,
-                    contents=analysis_prompt
-                )
-                st.subheader("💡 AI Analysis Output")
-                st.markdown(response.text)
+                try:
+                    analysis_prompt = f"Please process the following text according to this directive: '{action}'. Here is the text:\n\n{document_text}"
+                    response = model.generate_content(analysis_prompt)
+                    st.subheader("💡 AI Analysis Output")
+                    st.markdown(response.text)
+                except Exception as e:
+                    st.error(f"Analysis failed: {e}")
