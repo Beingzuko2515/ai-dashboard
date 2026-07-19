@@ -1,85 +1,104 @@
 import streamlit as st
 import pandas as pd
 import requests
-import json
 import uuid
+import base64
+from PIL import Image
+import io
 
-# --- GLOBAL CONFIGURATION & STYLING ---
-st.set_page_config(page_title="AI Hyper-Agent Workspace", layout="wide", initial_sidebar_state="expanded")
+# --- APP CONFIGURATION & DYNAMIC ANIMATED RGB BORDER ---
+st.set_page_config(page_title="Omni-Agent Hub", layout="wide", initial_sidebar_state="expanded")
 
-# Inject custom CSS for a cleaner, modern chat interface and better contrast accessibility
+# Inject CSS for an awesome animated RGB glowing frame and accessible typography
 st.markdown("""
     <style>
-    .stChatMessage { border-radius: 12px; margin-bottom: 10px; padding: 15px; }
-    .stChatInputContainer { border-top: 1px solid #ccc; padding-top: 10px; }
-    button[kind="secondary"] { border-radius: 20px; font-weight: bold; }
+    /* Animated RGB Border Frame around the entire app window */
+    .stApp {
+        border: 8px solid transparent;
+        border-image: linear-gradient(to bottom right, #ff007f, #7f00ff, #00f0ff, #ff007f) 1;
+        animation: rgb-glow 6s linear infinite;
+    }
+    @keyframes rgb-glow {
+        0% { filter: hue-rotate(0deg); }
+        100% { filter: hue-rotate(360deg); }
+    }
+    
+    /* Clean welcome message styling */
+    .welcome-card {
+        background: linear-gradient(135deg, rgba(127,0,255,0.1), rgba(0,240,255,0.05));
+        padding: 25px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.15);
+        margin-bottom: 20px;
+    }
+    
+    .stChatMessage { border-radius: 12px; margin-bottom: 12px; padding: 14px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- INITIALIZE CHAT HISTORY STORAGE ---
+# --- TRACK SESSION HISTORY SYSTEM ---
 if "sessions" not in st.session_state:
     st.session_state.sessions = {
-        "default": {"name": "New Chat Workspace ✨", "messages": []}
+        "default": {"name": "Main Chat Hub 💬", "messages": []}
     }
 if "current_session" not in st.session_state:
     st.session_state.current_session = "default"
 
-# --- SIDEBAR: PERSISTENT CONVERSATION HISTORY (Like ChatGPT/Gemini) ---
+# --- SIDEBAR SESSION DRAWER ---
 with st.sidebar:
     st.title("🗂️ Chat Workspaces")
-    
-    # Button to launch a clean new session
     if st.button("➕ Start New Chat", use_container_width=True):
         new_id = str(uuid.uuid4())
-        st.session_state.sessions[new_id] = {"name": f"Chat session {len(st.session_state.sessions) + 1}", "messages": []}
+        st.session_state.sessions[new_id] = {"name": f"Session {len(st.session_state.sessions)+1}", "messages": []}
         st.session_state.current_session = new_id
         st.rerun()
         
     st.markdown("---")
-    st.subheader("Recent Sessions")
-    
-    # List all historic saved sessions dynamically
+    st.subheader("Saved Chats")
     for session_id, session_data in list(st.session_state.sessions.items()):
-        button_label = session_data["name"]
-        # Highlight active session visually
+        lbl = session_data["name"]
         if session_id == st.session_state.current_session:
-            button_label = f"▶️ {button_label}"
-            
-        if st.button(button_label, key=f"session_{session_id}", use_container_width=True):
+            lbl = f"▶️ {lbl}"
+        if st.button(lbl, key=f"session_{session_id}", use_container_width=True):
             st.session_state.current_session = session_id
             st.rerun()
 
-# --- MAIN ENGINE: DIRECT API CALL WITH AGENT TOOLS ROUTER ---
+# --- CONNECT TO GEMINI API DIRECT ENGINE ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except Exception:
-    st.error("API Key missing! Please make sure GEMINI_API_KEY is configured in your Streamlit Secrets.")
+    st.error("Missing API Key! Please configure GEMINI_API_KEY inside Streamlit Secrets.")
     st.stop()
 
-def run_agent_brain(prompt_text, conversation_history):
-    # Using the current standard free-tier model string
+def run_multimodal_brain(prompt_text, conversation_history, image_b64=None, mime_type="image/jpeg"):
+    # Target endpoint for gemini-3.5-flash
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
     
-    # Format current dynamic history + system system prompt routing capabilities
     system_instruction = (
-        "You are an Omni-Tool Intelligent Agent. You autonomously decide how to handle user intents. "
-        "If a user wants structural outlines, data blueprints, or creative generation instructions, "
-        "always organize it beautifully using Markdown tables, headers, and bullet structures. "
-        "Provide direct actionable instructions cleanly."
+        "You are an Omni-Tool Intelligence Engine. You automatically identify the user's intent. "
+        "If they give you data frames/CSV shapes, run analysis. If they attach images, detail them. "
+        "If they request art templates, draw an expansive architectural Markdown layout blueprint for concepts. "
+        "Always structure insights gracefully using tables, bolds, and list grids."
     )
     
-    # Compile history cleanly for structural payload delivery
-    formatted_contents = []
-    for msg in conversation_history[-6:]: # Pass the last 3 turns for context stability
-        role_label = "user" if msg["role"] == "user" else "model"
-        formatted_contents.append({"role": role_label, "parts": [{"text": msg["content"]}]})
+    # Bundle text thread history turns safely
+    parts_list = []
+    
+    # Incorporate Image attachment inside payload if provided
+    if image_b64:
+        parts_list.append({
+            "inlineData": {
+                "mimeType": mime_type,
+                "data": image_b64
+            }
+        })
         
-    # Append fresh query request
-    formatted_contents.append({"role": "user", "parts": [{"text": prompt_text}]})
+    # Append actual prompt request text
+    parts_list.append({"text": prompt_text})
     
     payload = {
-        "contents": formatted_contents,
+        "contents": [{"role": "user", "parts": parts_list}],
         "systemInstruction": {"parts": [{"text": system_instruction}]}
     }
     
@@ -88,64 +107,75 @@ def run_agent_brain(prompt_text, conversation_history):
         try:
             return response.json()["candidates"][0]["content"]["parts"][0]["text"]
         except Exception:
-            return "⚠️ Connection verified, but response structural mapping failed."
+            return "⚠️ Server connection active, but could not parse the response data structure."
     else:
         return f"🚨 API Server Connection Error ({response.status_code}): {response.text}"
 
-# --- ACTIVE WORKSPACE INTERFACE ---
+# --- CORE USER INTERFACE CANVAS ---
 current_chat = st.session_state.sessions[st.session_state.current_session]
 
-st.title("🤖 Intelligent Multi-Tool Workspace")
-st.write(f"Active Workspace: **{current_chat['name']}**")
-st.caption("Type naturally! The system automatically detects data analytics, text processing, or visual concept generation rules.")
+# Header Showcase Message Banner
+st.markdown("""
+    <div class='welcome-card'>
+        <h2>✨ Welcome to the Intelligent Super-Agent Suite</h2>
+        <p>Type queries freely! Drop images to analyze them, upload data sheets to graph them, or brainstorm code out loud. The underlying pipeline automatically routes actions based on your input parameters.</p>
+    </div>
+""", unsafe_allow_html=True)
 
-# --- PERSISTENT UTILITY UPLOADER RIGHT INSIDE CHAT WORKSPACE ---
-with st.expander("📎 Click here to attach CSV spreadsheets or Data Reports for the AI to inspect", expanded=False):
-    uploaded_file = st.file_uploader("Drop your dataset here:", type=["csv", "txt"])
-    if uploaded_file is not None:
-        if uploaded_file.name.endswith('.csv'):
-            df = pd.read_csv(uploaded_file)
-            st.success(f"Successfully loaded data matrix: '{uploaded_file.name}'")
-            
-            # Context splits into visual chart widgets automatically inside workflow window
-            c1, c2 = st.columns(2)
-            with c1:
-                st.write("**Data Insight Frame Preview:**")
-                st.dataframe(df.head(3))
-            with c2:
-                numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-                if len(numeric_cols) >= 1:
-                    target_col = st.selectbox("Select column to graph instantly:", numeric_cols)
-                    st.line_chart(df[target_col].head(20))
-            
-            # Silently append data structure overview to chat environment context window
-            data_summary = f"\n[User has attached file table: '{uploaded_file.name}'. Summary: Shape={df.shape}, Numeric fields={numeric_cols}]"
-        else:
-            data_summary = f"\n[User text document upload content follows:\n{uploaded_file.getvalue().decode('utf-8')[:2000]}]"
+# --- MODERN IN-LINE MULTIMEDIA SEARCH & UPLOAD BOX ---
+st.write("### 🔍 Omni Search & Media Attachment Input")
+col_upload, col_data = st.columns(2)
 
-# Render active window messages history frame
+image_base64_string = None
+image_mime = "image/jpeg"
+
+with col_upload:
+    uploaded_image = st.file_uploader("🖼️ Attach image here to query visual elements:", type=["png", "jpg", "jpeg"])
+    if uploaded_image is not None:
+        # Open and show file element
+        img = Image.open(uploaded_image)
+        st.image(img, caption="Loaded Input Target", width=220)
+        
+        # Parse into standard transmission payload bytes
+        buffered = io.BytesIO()
+        img.save(buffered, format="JPEG")
+        image_base64_string = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        image_mime = "image/jpeg"
+
+with col_data:
+    uploaded_csv = st.file_uploader("📊 Drop a dataset CSV file here to chart numeric rows:", type=["csv"])
+    if uploaded_csv is not None:
+        df = pd.read_csv(uploaded_csv)
+        st.success(f"Loaded matrix layout: {uploaded_csv.name}")
+        st.dataframe(df.head(2), use_container_width=True)
+        numeric_fields = df.select_dtypes(include=['number']).columns.tolist()
+        if len(numeric_fields) >= 1:
+            st.line_chart(df[numeric_fields[0]].head(15))
+        csv_context = f"\n[Data reference attached: '{uploaded_csv.name}' Shape info: {df.shape}. Numeric variables: {numeric_fields}]"
+
+st.markdown("---")
+
+# Render active timeline conversation messages 
 for message in current_chat["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# User Input Execution Layer
-if user_query := st.chat_input("Ask a question, request a script, or issue analysis commands..."):
-    # Append visual input context to screen space
+# Text Query Execution Strip
+if user_input := st.chat_input("Write a prompt, request an art template layout, or analyze visual contexts..."):
     with st.chat_message("user"):
-        st.markdown(user_query)
+        st.markdown(user_input)
         
-    # Inject extra file variables data context safely if exist
-    injected_query = user_query + (data_summary if 'data_summary' in locals() else "")
-    current_chat["messages"].append({"role": "user", "content": user_query})
+    # Append spreadsheet contexts to text string seamlessly if active
+    final_query = user_input + (csv_context if 'csv_context' in locals() else "")
+    current_chat["messages"].append({"role": "user", "content": user_input})
     
-    # Auto rename default chat dynamically based on initial entry
+    # Auto adjust session label name dynamically
     if len(current_chat["messages"]) == 1:
-        current_chat["name"] = user_query[:25] + "..." if len(user_query) > 25 else user_query
+        current_chat["name"] = user_input[:20] + "..." if len(user_input) > 20 else user_input
         
-    # Execute autonomous output pipeline
     with st.chat_message("assistant"):
-        with st.spinner("Processing workflows..."):
-            ai_output = run_agent_brain(injected_query, current_chat["messages"][:-1])
-            st.markdown(ai_output)
-            current_chat["messages"].append({"role": "assistant", "content": ai_output})
+        with st.spinner("Analyzing parameters autonomously..."):
+            ai_response = run_multimodal_brain(final_query, current_chat["messages"][:-1], image_base64_string, image_mime)
+            st.markdown(ai_response)
+            current_chat["messages"].append({"role": "assistant", "content": ai_response})
             st.rerun()
