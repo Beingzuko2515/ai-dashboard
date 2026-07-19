@@ -1,35 +1,33 @@
 import streamlit as st
 import pandas as pd
 from google import genai
-from google.genai import types
-from PIL import Image
 import io
 
 # --- APP CONFIGURATION ---
 st.set_page_config(page_title="Mega AI Super-Agent Dashboard", layout="wide")
 st.title("🤖 Mega AI Super-Agent Dashboard")
-st.write("Welcome to your all-in-one hub for AI Chat, Live Search, Data Analytics, and Image Generation.")
+st.write("Welcome to your all-in-one hub for AI Chat, Data Analytics, and Document Insights.")
 
 # --- SIDEBAR NAVIGATION ---
 st.sidebar.title("🚀 Navigation Menu")
 page = st.sidebar.radio(
     "Go to Feature:", 
-    ["💬 AI Agent Chat & Search", "📊 Advanced Data Analyst", "🎨 AI Image Generator", "📝 Smart Document Reader"]
+    ["💬 AI Agent Chat", "📊 Advanced Data Analyst", "🎨 AI Art Concept Generator", "📝 Smart Document Reader"]
 )
 
 # --- FETCH SECRET API KEY ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
     client = genai.Client(api_key=api_key)
-    AI_MODEL = 'gemini-3.5-flash' 
+    AI_MODEL = 'gemini-2.5-flash' # Using the highly stable and fast 2.5 Flash free model
 except Exception:
     st.error("API Key missing! Please make sure GEMINI_API_KEY is configured in your Streamlit Secrets.")
     st.stop()
 
-# --- FEATURE 1: AI AGENT CHAT & SEARCH ---
-if page == "💬 AI Agent Chat & Search":
-    st.header("💬 AI Agent Chat (With Live Search Integration)")
-    st.write("Ask anything! The agent uses Google Search automatically if it needs real-time information.")
+# --- FEATURE 1: AI AGENT CHAT ---
+if page == "💬 AI Agent Chat":
+    st.header("💬 AI Agent Chat")
+    st.write("Ask anything! The agent will use its general knowledge base to solve problems.")
     
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -38,7 +36,7 @@ if page == "💬 AI Agent Chat & Search":
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    if prompt := st.chat_input("Ask me anything or ask me to search the web..."):
+    if prompt := st.chat_input("Ask me anything..."):
         with st.chat_message("user"):
             st.markdown(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -48,8 +46,7 @@ if page == "💬 AI Agent Chat & Search":
             
             response = client.models.generate_content(
                 model=AI_MODEL,
-                contents=prompt,
-                config={'tools': [{'google_search': {}}]}
+                contents=prompt
             )
             
             ai_response = response.text
@@ -94,39 +91,26 @@ elif page == "📊 Advanced Data Analyst":
         else:
             st.warning("Your CSV needs at least 2 numerical data columns to map visual graphs.")
 
-# --- FEATURE 3: AI IMAGE GENERATOR ---
-elif page == "🎨 AI Image Generator":
-    st.header("🎨 Text-to-Image AI Canvas")
-    st.write("Type a descriptive text prompt below to generate custom images using the free Gemini tier.")
+# --- FEATURE 3: AI ART CONCEPT GENERATOR ---
+elif page == "🎨 AI Art Concept Generator":
+    st.header("🎨 AI Art Concept Engine")
+    st.write("Since image rendering requires a paid tier, this feature uses AI to expand your idea into beautiful, highly detailed artwork prompt descriptions and structure layouts.")
     
-    image_prompt = st.text_input("Enter details of the image you want to create:", placeholder="A cute futuristic robot painting on a canvas, digital art...")
+    image_prompt = st.text_input("Enter a basic art idea:", placeholder="A cute robot painting on a canvas...")
     
-    if st.button("Generate Image ✨"):
+    if st.button("Generate Concept Design ✨"):
         if image_prompt:
-            with st.spinner("Bringing your imagination to life..."):
+            with st.spinner("Expanding your design concepts..."):
                 try:
-                    # Using standard multimodal generation with an IMAGE modality request
+                    art_prompt = f"Act as an expert digital artist. Create a highly descriptive layout blueprint, color palette, lighting details, and midjourney style prompts based on this idea: '{image_prompt}'"
                     response = client.models.generate_content(
                         model=AI_MODEL,
-                        contents=image_prompt,
-                        config=types.GenerateContentConfig(
-                            response_modalities=["IMAGE"]
-                        )
+                        contents=art_prompt
                     )
-                    
-                    image_found = False
-                    for part in response.parts:
-                        if part.inline_data:
-                            # Convert bytes back to a displayable PIL Image format
-                            image = part.as_image()
-                            st.image(image, caption=f"Result for: '{image_prompt}'", use_container_width=True)
-                            image_found = True
-                            
-                    if not image_found:
-                        st.warning("The model processed your request but didn't output an image structure. Try another prompt.")
-                        
+                    st.subheader("💡 Digital Art Blueprint")
+                    st.markdown(response.text)
                 except Exception as e:
-                    st.error(f"Image generation failed: {e}")
+                    st.error(f"Failed to generate layout: {e}")
         else:
             st.warning("Please type a description prompt first!")
 
