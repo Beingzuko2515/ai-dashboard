@@ -1,143 +1,151 @@
 import streamlit as st
 import pandas as pd
 import requests
-import io
+import json
+import uuid
 
-# --- APP CONFIGURATION ---
-st.set_page_config(page_title="Mega AI Super-Agent Dashboard", layout="wide")
-st.title("🤖 Mega AI Super-Agent Dashboard")
-st.write("Welcome to your all-in-one hub for AI Chat, Data Analytics, and Document Insights.")
+# --- GLOBAL CONFIGURATION & STYLING ---
+st.set_page_config(page_title="AI Hyper-Agent Workspace", layout="wide", initial_sidebar_state="expanded")
 
-# --- SIDEBAR NAVIGATION ---
-st.sidebar.title("🚀 Navigation Menu")
-page = st.sidebar.radio(
-    "Go to Feature:", 
-    ["💬 AI Agent Chat", "📊 Advanced Data Analyst", "🎨 AI Art Concept Generator", "📝 Smart Document Reader"]
-)
+# Inject custom CSS for a cleaner, modern chat interface and better contrast accessibility
+st.markdown("""
+    <style>
+    .stChatMessage { border-radius: 12px; margin-bottom: 10px; padding: 15px; }
+    .stChatInputContainer { border-top: 1px solid #ccc; padding-top: 10px; }
+    button[kind="secondary"] { border-radius: 20px; font-weight: bold; }
+    </style>
+""", unsafe_allow_html=True)
 
-# --- FETCH SECRET API KEY & DEFINE API FUNCTION ---
+# --- INITIALIZE CHAT HISTORY STORAGE ---
+if "sessions" not in st.session_state:
+    st.session_state.sessions = {
+        "default": {"name": "New Chat Workspace ✨", "messages": []}
+    }
+if "current_session" not in st.session_state:
+    st.session_state.current_session = "default"
+
+# --- SIDEBAR: PERSISTENT CONVERSATION HISTORY (Like ChatGPT/Gemini) ---
+with st.sidebar:
+    st.title("🗂️ Chat Workspaces")
+    
+    # Button to launch a clean new session
+    if st.button("➕ Start New Chat", use_container_width=True):
+        new_id = str(uuid.uuid4())
+        st.session_state.sessions[new_id] = {"name": f"Chat session {len(st.session_state.sessions) + 1}", "messages": []}
+        st.session_state.current_session = new_id
+        st.rerun()
+        
+    st.markdown("---")
+    st.subheader("Recent Sessions")
+    
+    # List all historic saved sessions dynamically
+    for session_id, session_data in list(st.session_state.sessions.items()):
+        button_label = session_data["name"]
+        # Highlight active session visually
+        if session_id == st.session_state.current_session:
+            button_label = f"▶️ {button_label}"
+            
+        if st.button(button_label, key=f"session_{session_id}", use_container_width=True):
+            st.session_state.current_session = session_id
+            st.rerun()
+
+# --- MAIN ENGINE: DIRECT API CALL WITH AGENT TOOLS ROUTER ---
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except Exception:
     st.error("API Key missing! Please make sure GEMINI_API_KEY is configured in your Streamlit Secrets.")
     st.stop()
 
-def ask_gemini(prompt_text):
-    # Fixed model path to use the current gemini-3.5-flash endpoint
+def run_agent_brain(prompt_text, conversation_history):
+    # Using the current standard free-tier model string
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={api_key}"
     headers = {"Content-Type": "application/json"}
+    
+    # Format current dynamic history + system system prompt routing capabilities
+    system_instruction = (
+        "You are an Omni-Tool Intelligent Agent. You autonomously decide how to handle user intents. "
+        "If a user wants structural outlines, data blueprints, or creative generation instructions, "
+        "always organize it beautifully using Markdown tables, headers, and bullet structures. "
+        "Provide direct actionable instructions cleanly."
+    )
+    
+    # Compile history cleanly for structural payload delivery
+    formatted_contents = []
+    for msg in conversation_history[-6:]: # Pass the last 3 turns for context stability
+        role_label = "user" if msg["role"] == "user" else "model"
+        formatted_contents.append({"role": role_label, "parts": [{"text": msg["content"]}]})
+        
+    # Append fresh query request
+    formatted_contents.append({"role": "user", "parts": [{"text": prompt_text}]})
+    
     payload = {
-        "contents": [{
-            "parts": [{"text": prompt_text}]
-        }]
+        "contents": formatted_contents,
+        "systemInstruction": {"parts": [{"text": system_instruction}]}
     }
     
     response = requests.post(url, json=payload, headers=headers)
-    
     if response.status_code == 200:
         try:
             return response.json()["candidates"][0]["content"]["parts"][0]["text"]
         except Exception:
-            return "Error parsing response structure from the server."
+            return "⚠️ Connection verified, but response structural mapping failed."
     else:
-        return f"API Connection Error (Status Code: {response.status_code}): {response.text}"
+        return f"🚨 API Server Connection Error ({response.status_code}): {response.text}"
 
-# --- FEATURE 1: AI AGENT CHAT ---
-if page == "💬 AI Agent Chat":
-    st.header("💬 AI Agent Chat")
-    st.write("Ask anything! The agent will use its knowledge base to solve problems.")
-    
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+# --- ACTIVE WORKSPACE INTERFACE ---
+current_chat = st.session_state.sessions[st.session_state.current_session]
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+st.title("🤖 Intelligent Multi-Tool Workspace")
+st.write(f"Active Workspace: **{current_chat['name']}**")
+st.caption("Type naturally! The system automatically detects data analytics, text processing, or visual concept generation rules.")
 
-    if prompt := st.chat_input("Ask me anything..."):
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                ai_response = ask_gemini(prompt)
-                st.markdown(ai_response)
-                st.session_state.messages.append({"role": "assistant", "content": ai_response})
-
-# --- FEATURE 2: ADVANCED DATA ANALYST ---
-elif page == "📊 Advanced Data Analyst":
-    st.header("📊 Interactive Data Analyst & Chart Generator")
-    st.write("Upload any dataset (CSV) to view insights, clean tables, and plot custom charts instantly.")
-    
-    uploaded_file = st.file_uploader("Upload your CSV data file", type="csv")
+# --- PERSISTENT UTILITY UPLOADER RIGHT INSIDE CHAT WORKSPACE ---
+with st.expander("📎 Click here to attach CSV spreadsheets or Data Reports for the AI to inspect", expanded=False):
+    uploaded_file = st.file_uploader("Drop your dataset here:", type=["csv", "txt"])
     if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("📋 Data Preview (First 5 Rows)")
-            st.dataframe(df.head())
-        with col2:
-            st.subheader("📈 Quick Statistics Summary")
-            st.write(df.describe())
+        if uploaded_file.name.endswith('.csv'):
+            df = pd.read_csv(uploaded_file)
+            st.success(f"Successfully loaded data matrix: '{uploaded_file.name}'")
             
-        st.markdown("---")
-        st.subheader("🎨 Custom Chart Generator")
-        numeric_columns = df.select_dtypes(include=['number']).columns.tolist()
-        
-        if len(numeric_columns) >= 2:
-            x_axis = st.selectbox("Select X-axis data column:", numeric_columns)
-            y_axis = st.selectbox("Select Y-axis data column:", numeric_columns)
+            # Context splits into visual chart widgets automatically inside workflow window
+            c1, c2 = st.columns(2)
+            with c1:
+                st.write("**Data Insight Frame Preview:**")
+                st.dataframe(df.head(3))
+            with c2:
+                numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+                if len(numeric_cols) >= 1:
+                    target_col = st.selectbox("Select column to graph instantly:", numeric_cols)
+                    st.line_chart(df[target_col].head(20))
             
-            chart_type = st.selectbox("Select Visual Chart Style:", ["Line Chart", "Bar Chart", "Area Chart"])
-            
-            chart_df = df[[x_axis, y_axis]].set_index(x_axis)
-            
-            if chart_type == "Line Chart":
-                st.line_chart(chart_df)
-            elif chart_type == "Bar Chart":
-                st.bar_chart(chart_df)
-            elif chart_type == "Area Chart":
-                st.area_chart(chart_df)
+            # Silently append data structure overview to chat environment context window
+            data_summary = f"\n[User has attached file table: '{uploaded_file.name}'. Summary: Shape={df.shape}, Numeric fields={numeric_cols}]"
         else:
-            st.warning("Your CSV needs at least 2 numerical data columns to map visual graphs.")
+            data_summary = f"\n[User text document upload content follows:\n{uploaded_file.getvalue().decode('utf-8')[:2000]}]"
 
-# --- FEATURE 3: AI ART CONCEPT GENERATOR ---
-elif page == "🎨 AI Art Concept Generator":
-    st.header("🎨 AI Art Concept Engine")
-    st.write("This feature uses AI to expand your idea into beautiful, highly detailed artwork prompt descriptions and structure layouts.")
-    
-    image_prompt = st.text_input("Enter a basic art idea:", placeholder="A cute robot painting on a canvas...")
-    
-    if st.button("Generate Concept Design ✨"):
-        if image_prompt:
-            with st.spinner("Expanding your design concepts..."):
-                art_prompt = f"Act as an expert digital artist. Create a highly descriptive layout blueprint, color palette, lighting details, and Midjourney style prompts based on this idea: '{image_prompt}'"
-                ai_response = ask_gemini(art_prompt)
-                st.subheader("💡 Digital Art Blueprint")
-                st.markdown(ai_response)
-        else:
-            st.warning("Please type a description prompt first!")
+# Render active window messages history frame
+for message in current_chat["messages"]:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-# --- FEATURE 4: SMART DOCUMENT READER ---
-elif page == "📝 Smart Document Reader":
-    st.header("📝 AI Document Summary Agent")
-    st.write("Upload plain text reports or notes, and the AI will analyze them for you.")
+# User Input Execution Layer
+if user_query := st.chat_input("Ask a question, request a script, or issue analysis commands..."):
+    # Append visual input context to screen space
+    with st.chat_message("user"):
+        st.markdown(user_query)
+        
+    # Inject extra file variables data context safely if exist
+    injected_query = user_query + (data_summary if 'data_summary' in locals() else "")
+    current_chat["messages"].append({"role": "user", "content": user_query})
     
-    uploaded_doc = st.file_uploader("Upload a text file (.txt)", type=["txt"])
-    if uploaded_doc is not None:
-        stringio = io.StringIO(uploaded_doc.getvalue().decode("utf-8"))
-        document_text = stringio.read()
+    # Auto rename default chat dynamically based on initial entry
+    if len(current_chat["messages"]) == 1:
+        current_chat["name"] = user_query[:25] + "..." if len(user_query) > 25 else user_query
         
-        st.subheader("📑 Document Content Preview")
-        st.text_area("File Context View", document_text, height=150)
-        
-        action = st.radio("What action should the AI perform?", ["Summarize into bullet points", "Extract action items", "Explain like I'm 5 years old"])
-        
-        if st.button("Analyze Document 🧠"):
-            with st.spinner("Analyzing document structure..."):
-                analysis_prompt = f"Please process the following text according to this directive: '{action}'. Here is the text:\n\n{document_text}"
-                ai_response = ask_gemini(analysis_prompt)
-                st.subheader("💡 AI Analysis Output")
-                st.markdown(ai_response)
+    # Execute autonomous output pipeline
+    with st.chat_message("assistant"):
+        with st.spinner("Processing workflows..."):
+            ai_output = run_agent_brain(injected_query, current_chat["messages"][:-1])
+            st.markdown(ai_output)
+            current_chat["messages"].append({"role": "assistant", "content": ai_output})
+            st.rerun()
