@@ -19,8 +19,8 @@ page = st.sidebar.radio(
 try:
     api_key = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=api_key)
-    # Using the most globally compatible free text model
-    model = genai.GenerativeModel('gemini-pro') 
+    # Using the current standard free tier model string
+    model = genai.GenerativeModel('gemini-1.5-flash') 
 except Exception:
     st.error("API Key missing! Please make sure GEMINI_API_KEY is configured in your Streamlit Secrets.")
     st.stop()
